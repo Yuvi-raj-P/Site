@@ -4,6 +4,7 @@ window.addEventListener('load', function() {
     const secondSvg = document.querySelector('.svg-elem-2');
     const dotSvg = document.querySelector('.hidden.circle');
     
+    firstSvg.classList.remove('hidden');
     firstSvg.classList.add('animate');
     
     setTimeout(() => {

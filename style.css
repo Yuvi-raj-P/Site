@@ -43,7 +43,7 @@ body, html {
     animation: animate-svg-stroke-2 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) 0s both;
 }
 .circle.fade-in {
-    animation: fadeIn 2s forwards;
+    animation: fadeIn 0.8s forwards;
 }
 @keyframes fadeIn {
     from { opacity: 0; }
