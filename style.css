@@ -4,18 +4,55 @@ body, html {
     width: 100%;
     height: 100%;
     background-color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    overflow: hidden;
 }
-.loading-screen {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+
+.container {
+    position: relative;
     width: 100%;
     height: 100%;
-    position: relative;
 }
+
+.svg-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.threejs-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+}
+
+.hidden {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.visible {
+    opacity: 1;
+}
+
+.spacing {
+    margin-left: 20px;
+}
+
+.circle {
+    position: absolute;
+    transform: translate(67px, -35px);
+}
+
 @keyframes animate-svg-stroke-1 {
     0% {
         stroke-dashoffset: 1759.91015625px;
@@ -26,9 +63,11 @@ body, html {
         stroke-dasharray: 1759.91015625px;
     }
 }
+
 .svg-elem-1.animate {
     animation: animate-svg-stroke-1 4s cubic-bezier(0.455, 0.03, 0.515, 0.955) 0s both;
 }
+
 @keyframes animate-svg-stroke-2 {
     0% {
         stroke-dashoffset: 407.61663818359375px;
@@ -39,27 +78,16 @@ body, html {
         stroke-dasharray: 407.61663818359375px;
     }
 }
+
 .svg-elem-2.animate {
     animation: animate-svg-stroke-2 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) 0s both;
 }
+
 .circle.fade-in {
     animation: fadeIn 0.8s forwards;
 }
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
-.hidden {
-    opacity: 0;
-    transition: opacity 0.5s ease-in-out;
-}
-.visible {
-    opacity: 1;
-}
-.spacing {
-    margin-left: 20px;
-}
-.circle {
-    position: absolute;
-    transform: translate(67px,-35px);
 }
