@@ -1,54 +1,40 @@
-import * as THREE from 'https://cdn.skypack.dev/three@0.129.0/build/three.module.js';
-import { SVGLoader } from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/SVGLoader.js';
+import * as THREE from "https://esm.sh/three";
+import { EffectComposer } from "https://esm.sh/three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "https://esm.sh/three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "https://esm.sh/three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "https://esm.sh/three/addons/postprocessing/OutputPass.js";
 
-document.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.querySelector('.threejs-canvas');
-    if (!canvas) {
-        console.error('Canvas element not found');
-        return;
+// Create the scene, camera, and renderer
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Add a plane geometry to represent the water surface
+const geometry = new THREE.PlaneGeometry(100, 100, 100, 100);
+const material = new THREE.MeshBasicMaterial({ color: 0x00aaff, wireframe: true });
+const plane = new THREE.Mesh(geometry, material);
+plane.rotation.x = -Math.PI / 2;
+scene.add(plane);
+
+// Position the camera
+camera.position.z = 50;
+camera.position.y = 50;
+camera.lookAt(0, 0, 0);
+
+// Animation loop
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Simple wave effect
+    const time = Date.now() * 0.001;
+    for (let i = 0; i < geometry.vertices.length; i++) {
+        const vertex = geometry.vertices[i];
+        vertex.z = Math.sin(vertex.x * 0.1 + time) * 2 + Math.sin(vertex.y * 0.1 + time) * 2;
     }
+    geometry.verticesNeedUpdate = true;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    camera.position.z = 5;
-
-    const loadSVG = (url, position, scale) => {
-        const loader = new SVGLoader();
-        loader.load(url, (data) => {
-            const paths = data.paths;
-            const group = new THREE.Group();
-            group.position.copy(position);
-            group.scale.multiplyScalar(scale);
-
-            paths.forEach((path) => {
-                const material = new THREE.MeshBasicMaterial({
-                    color: 0xffffff, // White color for visibility against black background
-                    side: THREE.DoubleSide,
-                    depthWrite: false
-                });
-
-                const shapes = SVGLoader.createShapes(path);
-                shapes.forEach((shape) => {
-                    const geometry = new THREE.ShapeGeometry(shape);
-                    const mesh = new THREE.Mesh(geometry, material);
-                    group.add(mesh);
-                });
-            });
-
-            scene.add(group);
-        });
-    };
-
-    loadSVG('YuvrajText.svg', new THREE.Vector3(-2, 1, 0), 5);
-
-    const animate = () => {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
-    };
-
-    animate();
-});
+    renderer.render(scene, camera);
+}
+animate();
