@@ -68,19 +68,19 @@
             water = new Water(
                 waterGeometry,
                 {
-                    textureWidth: 512,
-                    textureHeight: 512,
+                    textureWidth: 1024,
+                    textureHeight: 1024,
                     waterNormals: waterNormals,
                     sunDirection: new THREE.Vector3(),
-                    sunColor: 0x000000, // Set sun color to black to make it less noticeable
-                    waterColor: 0x0044ff, // Brighter water color
-                    distortionScale: 3.7,
-                    size: 10 // Increased size
+                    sunColor: 0x2432a0, 
+                    waterColor: 0x070b2d, 
+                    distortionScale: 8.5,
+                    size: 10000 
                 }
             );
 
             water.rotation.x = -Math.PI / 2;
-            //scene.add(water);
+            scene.add(water);
 
             // Add a large sphere to act as the skybox
             const skyGeometry = new THREE.SphereGeometry(5000, 32, 32);
@@ -89,7 +89,7 @@
                     topColor: { value: new THREE.Color(0x020339) }, // Edit this color for the top of the sphere
                     bottomColor: { value: new THREE.Color(0x07249b) }, // Edit this color for the bottom of the sphere
                     offset: { value: 60 },
-                    exponent: { value: 0.8 }
+                    exponent: { value: 0.3 }
                 },
                 vertexShader: `
                     varying vec3 vWorldPosition;
@@ -172,6 +172,31 @@
 
             const stars = new THREE.Points(starGeometry, starMaterial);
             scene.add(stars);
+            const cloudTexture = loader.load('cloud10.png', animate);
+        // Add clouds to the sky
+        const cloudGeometry = new THREE.BufferGeometry();
+        const cloudVertices = [];
+        const cloudSizes = []; 
+        for (let i = 0; i < 2000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(2000);
+            const y = THREE.MathUtils.randFloat(500, 1000); // Ensure clouds are above the horizon
+            const z = THREE.MathUtils.randFloatSpread(2000);
+            cloudVertices.push(x, y, z);
+            cloudSizes.push(Math.random() * 50 + 50); // Random size for clouds
+        }
+        cloudGeometry.setAttribute('position', new THREE.Float32BufferAttribute(cloudVertices, 3
+));
+        cloudGeometry.setAttribute('size', new THREE.Float32BufferAttribute(cloudSizes, 1));
+        const cloudMaterial = new THREE.PointsMaterial({
+            map: cloudTexture,
+            transparent: true,
+            opacity: 0.8, 
+            sizeAttenuation: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const clouds = new THREE.Points(cloudGeometry, cloudMaterial);
+        scene.add(clouds);
 
             controls = new OrbitControls(camera, renderer.domElement);
             controls.maxPolarAngle = Math.PI * 0.495;
@@ -182,6 +207,7 @@
 
             window.addEventListener('resize', onWindowResize);
         }
+       
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -199,8 +225,7 @@
 
             // Update water material time uniform to animate water
             // Adjust the increment value to control the speed of water movement
-            water.material.uniforms['time'].value += 10.0 / 60.0; // Default speed
-
+            water.material.uniforms['time'].value += 0.2 / 60.0; // Default speed
             // Example: Increase the speed
             // water.material.uniforms['time'].value += 2.0 / 60.0;
 
