@@ -1,5 +1,5 @@
 First high seas project no even sure what I did here, editing the readme before it comes to a review. Changed formatting, refactoring and removing all the comments!
-There is AI used to debug a shader issue with twinkling stars.
+There is AI used to debug a shader issue with twinkling stars if I remember it right.
 
 A simple 3d site that I did in three js with water and sky shader! 
 
