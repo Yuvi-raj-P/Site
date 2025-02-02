@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>three.js webgpu - ocean</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.153.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.153.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from "three";
+        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+        import { Water } from "three/addons/objects/Water.js";
+        import { Sky } from "three/addons/objects/Sky.js";
+
+        let container;
+        let camera, scene, renderer;
+        let controls, water, sun;
+
+        init();
+
+        function init() {
+            container = document.getElementById('container');
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setAnimationLoop(animate);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 0.3;
+            container.appendChild(renderer.domElement);
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 20000);
+            camera.position.set(30, 30, 100);
+
+            sun = new THREE.Vector3();
+
+            const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
+            const loader = new THREE.TextureLoader();
+            const waterNormals = loader.load('https://threejs.org/examples/textures/waternormals.jpg');
+            waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
+
+            water = new Water(
+                waterGeometry,
+                {
+                    textureWidth: 1024,
+                    textureHeight: 1024,
+                    waterNormals: waterNormals,
+                    sunDirection: new THREE.Vector3(),
+                    sunColor: 0x2432a0, 
+                    waterColor: 0x070b2d, 
+                    distortionScale: 8.5,
+                    size: 10000 
+                }
+            );
+
+            water.rotation.x = -Math.PI / 2;
+            scene.add(water);
+
+            const skyGeometry = new THREE.SphereGeometry(5000, 32, 32);
+            const skyMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    topColor: { value: new THREE.Color(0x020339) },
+                    bottomColor: { value: new THREE.Color(0x07249b) },
+                    offset: { value: 60 },
+                    exponent: { value: 0.3 }
+                },
+                vertexShader: `
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        vec4 worldPosition = modelViewMatrix * vec4(position, 1.0);
+                        vWorldPosition = worldPosition.xyz;
+                        gl_Position = projectionMatrix * worldPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 topColor;
+                    uniform vec3 bottomColor;
+                    uniform float offset;
+                    uniform float exponent;
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        float h = normalize(vWorldPosition + offset).y;
+                        gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                    }
+                `,
+                side: THREE.BackSide
+            });
+
+            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+            scene.add(sky);
+            const starGeometry = new THREE.BufferGeometry();
+            const starVertices = [];
+            const starPhases = [];
+            const starSizes = [];
+            for (let i = 0; i < 5000; i++) {
+                const x = THREE.MathUtils.randFloatSpread(2000);
+                const y = THREE.MathUtils.randFloat(100, 2000); 
+                const z = THREE.MathUtils.randFloatSpread(2000);
+
+                if (Math.sqrt(x * x + y * y + z * z) > 500) {
+                    starVertices.push(x, y, z);
+                    starPhases.push(Math.random() * 2.0 * Math.PI); 
+                    starSizes.push(Math.random() * 5 + 2); 
+                }
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            starGeometry.setAttribute('phase', new THREE.Float32BufferAttribute(starPhases, 1));
+            starGeometry.setAttribute('size', new THREE.Float32BufferAttribute(starSizes, 1));
+
+            const starMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 1.0 }
+                },
+                vertexShader: `
+                    attribute float phase;
+                    attribute float size;
+                    varying float vPhase;
+                    void main() {
+                        vPhase = phase;
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        gl_PointSize = size; 
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    varying float vPhase;
+                    void main() {
+                        float alpha = 0.8 + 0.5 * sin(time + vPhase);
+                        vec2 coord = gl_PointCoord - vec2(0.5);
+                        float distance = length(coord);
+                        if (distance > 0.5) {
+                            discard;                         }
+                        float glow = smoothstep(0.1, 0.3, distance); 
+                        vec3 color = mix(vec3(1.0, 1.0, 1.0), vec3(0.0, 0.0, 1.0), glow);
+                        gl_FragColor = vec4(color, alpha * (1.0 - distance * 0.5)); 
+                    }
+                `,
+                transparent: true
+            });
+
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+            const cloudTexture = loader.load('cloud10.png', animate);
+        const cloudGeometry = new THREE.BufferGeometry();
+        const cloudVertices = [];
+        const cloudSizes = []; 
+        for (let i = 0; i < 2000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(2000);
+            const y = THREE.MathUtils.randFloat(500, 1000); 
+            const z = THREE.MathUtils.randFloatSpread(2000);
+            cloudVertices.push(x, y, z);
+            cloudSizes.push(Math.random() * 50 + 50); 
+        }
+        cloudGeometry.setAttribute('position', new THREE.Float32BufferAttribute(cloudVertices, 3
+));
+        cloudGeometry.setAttribute('size', new THREE.Float32BufferAttribute(cloudSizes, 1));
+        const cloudMaterial = new THREE.PointsMaterial({
+            map: cloudTexture,
+            transparent: true,
+            opacity: 0.8, 
+            sizeAttenuation: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const clouds = new THREE.Points(cloudGeometry, cloudMaterial);
+        scene.add(clouds);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.maxPolarAngle = Math.PI * 0.495;
+            controls.target.set(0, 10, 0);
+            controls.minDistance = 40.0;
+            controls.maxDistance = 200.0;
+            controls.update();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+       
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            render();
+        }
+
+        function render() {
+            const time = performance.now() * 0.001;
+            water.material.uniforms['time'].value += 0.2 / 60.0; 
+            scene.children.forEach(child => {
+                if (child.material && child.material.uniforms && child.material.uniforms.time) {
+                    child.material.uniforms.time.value = time;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
